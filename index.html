@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mado — share screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=Zen+Maru+Gothic:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#101118;--panel:#191b25;--panel2:#222533;--line:#2c3042;--ink:#ecebf3;--mute:#9a9cb0;--acc:#f2a65a;--acc2:#7fc4c9;--warn:#f0c35a;--bad:#ef6f6c;--ok:#7fd39a}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Figtree,system-ui,sans-serif;overflow-x:clip}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* ---------- join ---------- */
+#join{min-height:100%;display:grid;place-items:center;padding:24px;
+  background:radial-gradient(1200px 600px at 15% 110%,#3a2a3f 0,transparent 60%),radial-gradient(900px 500px at 90% -10%,#1d3a44 0,transparent 60%),var(--bg)}
+.card{width:min(440px,100%);background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--line);border-radius:22px;padding:32px;box-shadow:0 30px 80px #0008}
+.logo{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+.logo h1{margin:0;font-size:40px;line-height:1;font-weight:800;letter-spacing:-.02em}
+.logo .kanji{font-family:"Zen Maru Gothic",sans-serif;font-size:22px;color:var(--acc);border:2px solid var(--acc);border-radius:10px;width:44px;height:44px;display:grid;place-items:center}
+.sub{color:var(--mute);margin:0 0 24px}
+label{display:block;font-weight:600;font-size:14px;margin:16px 0 6px}
+input[type=text]{width:100%;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);padding:0 14px;font-size:16px}
+.row{display:flex;gap:8px}
+.btn{height:44px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);padding:0 16px;font-weight:600;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn:hover{border-color:#454a63}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#1b130a}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.on{background:#2a3d36;border-color:#3f6b57;color:#c9f3d8}
+.btn.danger{color:#ffb4b2}
+.btn.big{height:52px;width:100%;justify-content:center;margin-top:24px;font-size:17px}
+.hint{font-size:14px;color:var(--mute);margin-top:12px}
+
+/* ---------- room ---------- */
+#room{height:100%;height:100dvh;display:grid;grid-template-rows:auto 1fr auto}
+#tapSound{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);height:52px;padding:0 22px;font-size:17px;z-index:2;box-shadow:0 10px 30px #000a}
+/* phones: watch + voice only (mobile browsers can't capture the screen) */
+.mobile #shareBtn,.mobile #quality,.mobile #copyInvite{display:none}
+.ios .vol{display:none}
+.mobile #stage{min-height:200px}
+.mobile footer{padding:8px 10px;gap:6px}.mobile footer .btn,.mobile select{height:42px;padding:0 12px}
+.mobile details.tips{display:none}
+@media(orientation:landscape) and (max-height:500px){.mobile #room{grid-template-rows:1fr auto}.mobile header{display:none}.mobile footer{padding:4px 8px}}
+header{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header .name{font-weight:800;font-size:18px}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:99px;background:var(--panel2);font-size:14px;color:var(--mute)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--warn);flex:none}
+.pill.ok .dot{background:var(--ok)}.pill.bad .dot{background:var(--bad)}
+header .sp{flex:1}
+#stage{position:relative;background:#000;overflow:hidden;min-height:240px}
+#remote{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+#empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--mute);padding:24px}
+#empty svg{width:120px;height:120px;margin-bottom:12px;opacity:.9}
+#empty strong{display:block;color:var(--ink);font-size:20px;margin-bottom:4px}
+#selfBox{position:absolute;right:14px;bottom:14px;width:clamp(160px,22%,320px);aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:2px solid var(--acc);background:#000;box-shadow:0 10px 30px #000a}
+#selfBox video{width:100%;height:100%;object-fit:contain}
+#selfBox span{position:absolute;left:8px;top:6px;font-size:12px;font-weight:600;background:#000a;padding:2px 8px;border-radius:99px}
+#selfBox button{position:absolute;right:6px;top:4px;background:#000a;border:0;border-radius:99px;width:26px;height:26px;font-size:14px}
+#stats{position:absolute;left:12px;top:12px;font-size:13px;line-height:1.45;background:#000b;padding:8px 12px;border-radius:10px;max-width:calc(100% - 24px);font-variant-numeric:tabular-nums}
+#stats b{color:var(--acc2);font-weight:600}
+#stats .lim{color:var(--warn)}
+#stage:fullscreen #selfBox{opacity:.85}
+footer{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid var(--line);background:var(--panel)}
+footer .grp{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+footer .sp{flex:1}
+select{height:44px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);padding:0 10px}
+.vol{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute);height:44px;padding:0 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+.vol input{width:80px;accent-color:var(--acc)}
+details.tips{position:absolute;right:14px;top:14px;max-width:min(420px,calc(100% - 28px));background:#15161fef;border:1px solid var(--line);border-radius:14px;font-size:14px}
+details.tips summary{cursor:pointer;padding:8px 14px;font-weight:600;list-style:none}
+details.tips summary::-webkit-details-marker{display:none}
+details.tips[open]{padding-bottom:6px}
+details.tips ol{margin:0;padding:0 18px 8px 34px;color:#d6d6e2}
+details.tips li{margin:6px 0}
+#toasts{position:fixed;left:50%;top:16px;transform:translateX(-50%);display:grid;gap:8px;z-index:9;width:min(560px,calc(100% - 24px))}
+.toast{background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--acc2);padding:10px 14px;border-radius:12px;box-shadow:0 10px 30px #0009;font-size:15px}
+.toast.warn{border-left-color:var(--warn)}.toast.bad{border-left-color:var(--bad)}
+@media(max-width:700px){footer .sp{display:none}.vol input{width:60px}details.tips{display:none}}
+@media(prefers-reduced-motion:no-preference){.toast{animation:in .25s ease-out}@keyframes in{from{opacity:0;transform:translateY(-6px)}}}
+</style>
+</head>
+<body>
+
+<main id="join">
+  <form class="card" id="joinForm">
+    <div class="logo"><div class="kanji">窓</div><h1>Mado</h1></div>
+    <p class="sub">A little window into each other's screen. Both of you type the same room name and you're connected.</p>
+    <label for="nameIn">Your name</label>
+    <input type="text" id="nameIn" maxlength="24" autocomplete="nickname" placeholder="Gabriel" required>
+    <label for="roomIn">Room name</label>
+    <div class="row">
+      <input type="text" id="roomIn" maxlength="40" autocomplete="off" required>
+      <button type="button" class="btn" id="copyRoom" title="Copy room name">Copy</button>
+    </div>
+    <p class="hint">Send this room name to your partner. Keep it a bit unique; anyone who types the same name could join.</p>
+    <button class="btn primary big" type="submit">Join room</button>
+    <p class="hint" id="envWarn" hidden></p>
+  </form>
+</main>
+
+<section id="room" hidden>
+  <header>
+    <span class="name" id="roomName"></span>
+    <span class="pill" id="status"><span class="dot"></span><span id="statusText">Connecting…</span></span>
+    <span class="sp"></span>
+    <button class="btn" id="copyInvite">Copy invite</button>
+  </header>
+
+  <div id="stage">
+    <video id="remote" autoplay playsinline hidden></video>
+    <div id="empty">
+      <div>
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <rect x="14" y="18" width="92" height="76" rx="10" fill="#1d2030" stroke="#f2a65a" stroke-width="3"/>
+          <path d="M60 18v76M14 56h92" stroke="#f2a65a" stroke-width="3"/>
+          <circle cx="86" cy="36" r="7" fill="#f2a65a" opacity=".85"/>
+          <path d="M22 86l14-14 10 8 12-16 14 22z" fill="#7fc4c9" opacity=".7"/>
+          <rect x="40" y="96" width="40" height="6" rx="3" fill="#2c3042"/>
+        </svg>
+        <strong id="emptyTitle">Waiting for your partner…</strong>
+        <span id="emptySub">When they share their screen, it shows up here.</span>
+      </div>
+    </div>
+    <div id="stats" hidden></div>
+    <button class="btn primary" id="tapSound" hidden>Tap for sound</button>
+    <div id="selfBox" hidden><video id="self" autoplay muted playsinline></video><span>You're sharing</span><button id="hideSelf" title="Hide preview" aria-label="Hide preview">×</button></div>
+    <details class="tips">
+      <summary>Tips for games</summary>
+      <ol>
+        <li><b>No echo of your partner's voice:</b> in Chrome's picker choose the <b>Window</b> tab, pick the game, and turn on the window-audio switch if Chrome shows one. That sends only the game's sound, not Discord.</li>
+        <li>If you have to share the <b>entire screen</b>, its audio includes Discord, so your partner hears themselves. Use Mado's <b>voice chat</b> instead of Discord then. Mado keeps its own sounds out of the shared audio.</li>
+        <li>Run the game in <b>borderless / windowed</b> mode. Exclusive fullscreen often shares as a black screen.</li>
+        <li>Wear headphones.</li>
+        <li>Laggy? Click <b>Stats</b>. "Limited by CPU" → choose 720p. "Limited by bandwidth" or high loss → Low bandwidth. "Relayed" means a direct link wasn't possible, so it adds delay.</li>
+      </ol>
+    </details>
+  </div>
+
+  <footer>
+    <div class="grp">
+      <button class="btn primary" id="shareBtn">Share my screen</button>
+      <button class="btn" id="micBtn" title="Optional voice chat, instead of Discord">Voice chat: off</button>
+      <select id="quality" aria-label="Quality">
+        <option value="smooth">720p · 60 fps</option>
+        <option value="sharp">1080p · 60 fps</option>
+        <option value="max">1440p · 60 fps</option>
+        <option value="low">Low bandwidth · 720p 30</option>
+      </select>
+      <select id="buffer" aria-label="Playback buffer">
+        <option value="0">Lowest delay</option>
+        <option value="150">Smoother (+150 ms)</option>
+      </select>
+    </div>
+    <span class="sp"></span>
+    <div class="grp">
+      <label class="vol" title="Their screen's sound">Game <input type="range" id="volScreen" min="0" max="1" step="0.05" value="1"></label>
+      <label class="vol" title="Their voice (Mado voice chat)">Voice <input type="range" id="volVoice" min="0" max="1" step="0.05" value="1"></label>
+      <button class="btn" id="statsBtn">Stats</button>
+      <button class="btn" id="fsBtn">Fullscreen</button>
+      <button class="btn danger" id="leaveBtn">Leave</button>
+    </div>
+  </footer>
+  <audio id="voice" autoplay></audio>
+</section>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+{
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const PREFIX = 'mado-v1-';
+const QUALITY = {
+  smooth: { w: 1280, h: 720,  fps: 60, br: 6_000_000 },
+  sharp:  { w: 1920, h: 1080, fps: 60, br: 10_000_000 },
+  max:    { w: 2560, h: 1440, fps: 60, br: 16_000_000 },
+  low:    { w: 1280, h: 720,  fps: 30, br: 2_500_000 },
+};
+const WORDS = ['capivara','tanuki','mochi','brigadeiro','sakura','ipe','onigiri','acai','koi','fuji','guarana','yuzu'];
+const st = { peer:null, slot:0, room:'', name:'', conn:null, connAt:0, lastSeen:0, partner:'',
+  screen:null, screenCall:null, mic:null, micCall:null, micMuted:false,
+  remoteScreenCall:null, remoteVoiceCall:null, q:'smooth', buf:0, left:false, showStats:false, prev:{} };
+
+const store = { get(k){ try{ return localStorage.getItem(k) }catch{ return null } }, set(k,v){ try{ localStorage.setItem(k,v) }catch{} } };
+const clean = s => s.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
+
+// Phones and tablets can watch and voice chat, but no mobile browser lets a page capture the screen.
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const IS_MOBILE = IS_IOS || /Android|Mobi/i.test(navigator.userAgent);
+const CAN_SHARE = !IS_MOBILE && window.isSecureContext && !!navigator.mediaDevices?.getDisplayMedia;
+document.documentElement.classList.toggle('mobile', IS_MOBILE);
+document.documentElement.classList.toggle('ios', IS_IOS);
+
+let wake = null;
+async function keepAwake(on){
+  try {
+    if (on && !wake && 'wakeLock' in navigator && document.visibilityState === 'visible') {
+      wake = await navigator.wakeLock.request('screen');
+      wake.addEventListener('release', () => { wake = null; });
+    } else if (!on && wake) { await wake.release(); wake = null; }
+  } catch {}
+}
+
+function toast(msg, kind='', ms=6000){
+  const d = document.createElement('div'); d.className = 'toast ' + kind; d.textContent = msg;
+  $('#toasts').appendChild(d); setTimeout(() => d.remove(), ms);
+}
+function setStatus(text, kind=''){ $('#statusText').textContent = text; $('#status').className = 'pill ' + kind; }
+
+/* ---------- join screen ---------- */
+$('#nameIn').value = store.get('mado-name') || '';
+const hashRoom = clean(decodeURIComponent(location.hash.slice(1)));
+$('#roomIn').value = hashRoom || store.get('mado-room') || (WORDS[Math.random()*WORDS.length|0] + '-' + (1000 + Math.random()*9000|0));
+if (!window.isSecureContext) { $('#envWarn').hidden = false; $('#envWarn').textContent = 'This page needs to be opened from an https:// link (or, on a computer, straight from the file). Otherwise sharing and voice chat are blocked.'; }
+else if (IS_MOBILE) { $('#envWarn').hidden = false; $('#envWarn').textContent = 'On a phone you can watch your partner\'s screen and use voice chat. Sharing your own screen needs a computer, because phone browsers don\'t allow it.'; }
+else if (!navigator.mediaDevices?.getDisplayMedia) { $('#envWarn').hidden = false; $('#envWarn').textContent = 'This browser can\'t share its screen. Use Chrome or Edge on a computer; you can still watch from here.'; }
+if (typeof Peer === 'undefined') { $('#envWarn').hidden = false; $('#envWarn').textContent = 'Couldn\'t load the connection library. Check your internet connection and reload.'; }
+
+async function copy(text, what){ try{ await navigator.clipboard.writeText(text); toast(what + ' copied'); }catch{ toast('Copy failed. ' + what + ': ' + text, 'warn', 9000); } }
+$('#copyRoom').onclick = () => copy(clean($('#roomIn').value), 'Room name');
+$('#copyInvite').onclick = () => {
+  const link = location.protocol.startsWith('http') ? location.origin + location.pathname + '#' + st.room : null;
+  copy(link ? link : st.room, link ? 'Invite link' : 'Room name');
+};
+
+$('#joinForm').onsubmit = e => {
+  e.preventDefault();
+  if (typeof Peer === 'undefined') { toast('Connection library didn\'t load. Reload the page.', 'bad'); return; }
+  st.name = $('#nameIn').value.trim().slice(0,24) || 'Someone';
+  st.room = clean($('#roomIn').value);
+  if (!st.room) { $('#roomIn').focus(); return; }
+  store.set('mado-name', st.name); store.set('mado-room', st.room);
+  try { history.replaceState(null, '', '#' + st.room); } catch {}
+  $('#join').hidden = true; $('#room').hidden = false;
+  $('#roomName').textContent = st.room;
+  keepAwake(true);
+  claim(1);
+  setInterval(tick, 1000);
+};
+
+/* ---------- connection (PeerJS) ----------
+   Two fixed slots per room: <room>-1 and <room>-2. The first person in takes slot 1 and waits;
+   the second gets slot 2 and dials slot 1. Only slot 2 ever dials, which avoids double connections. */
+function claim(slot){
+  if (st.left) return;
+  st.slot = slot;
+  setStatus('Reaching the meeting server…');
+  const p = new Peer(PREFIX + st.room + '-' + slot, { debug: 1 });
+  st.peer = p;
+  p.on('open', () => { setStatus('Waiting for your partner to join…'); if (slot === 2) dial(); });
+  p.on('connection', c => { const old = st.conn; wireConn(c); if (old && old !== c) old.close(); });
+  p.on('call', onCall);
+  p.on('disconnected', () => { if (!st.left && !p.destroyed) setTimeout(() => { try { p.reconnect(); } catch {} }, 1500); });
+  p.on('error', e => {
+    if (e.type === 'unavailable-id') {
+      p.destroy();
+      if (slot === 1) claim(2);
+      else { setStatus('Room is busy. Someone may have just left, retrying…', 'bad'); setTimeout(() => claim(1), 4000); }
+    } else if (e.type === 'peer-unavailable') {
+      /* partner isn't online yet: the tick loop retries */
+    } else if (['network','server-error','socket-error','socket-closed'].includes(e.type)) {
+      setStatus('Lost the meeting server, retrying…', 'bad');
+    } else if (e.type === 'browser-incompatible') {
+      setStatus('This browser can\'t do peer-to-peer. Use Chrome or Edge.', 'bad');
+    } else { console.warn(e); }
+  });
+}
+const otherId = () => PREFIX + st.room + '-' + (st.slot === 1 ? 2 : 1);
+
+function dial(){
+  if (!st.peer || st.peer.destroyed || !st.peer.open) return;
+  const c = st.peer.connect(otherId(), { reliable: true });
+  if (c) wireConn(c);
+}
+function wireConn(c){
+  st.conn = c; st.connAt = Date.now();
+  c.on('open', () => { if (st.conn !== c) return; st.lastSeen = Date.now(); send({ t:'hello', name: st.name, phone: !CAN_SHARE }); partnerUp(); });
+  c.on('data', d => { if (st.conn !== c) return; st.lastSeen = Date.now(); onMsg(d); });
+  c.on('close', () => { if (st.conn === c) { st.conn = null; partnerDown(); } });
+  c.on('error', () => {});
+}
+const send = m => { try { if (st.conn?.open) st.conn.send(m); } catch {} };
+const connected = () => !!st.conn?.open;
+
+function onMsg(m){
+  if (!m || typeof m !== 'object') return;
+  if (m.t === 'hello') { st.partner = String(m.name || 'Partner').slice(0,24); st.partnerPhone = !!m.phone; refreshEmpty(); }
+  if (m.t === 'screen-off') hideRemote();
+  if (m.t === 'bye') { const c = st.conn; st.conn = null; try { c?.close(); } catch {} partnerDown(); }
+}
+function partnerUp(){
+  toast((st.partner || 'Your partner') + ' is here');
+  if (st.screen) startScreenCall();
+  if (st.mic) startMicCall();
+  refreshEmpty();
+}
+function partnerDown(){
+  setStatus('Partner left. Waiting for them to come back…', 'bad');
+  hideRemote();
+  for (const k of ['screenCall','micCall','remoteVoiceCall']) { try { st[k]?.close(); } catch {} st[k] = null; }
+  $('#voice').srcObject = null;
+  refreshEmpty();
+}
+
+/* ---------- media calls ---------- */
+// Ask for stereo, high-bitrate Opus on the game-audio call (the default is tuned for speech).
+const stereo = sdp => sdp.replace(/(a=fmtp:\d+ [^\r\n]*useinbandfec=1)(?!;stereo)/g, '$1;stereo=1;sprop-stereo=1;maxaveragebitrate=128000');
+
+function startScreenCall(){
+  if (!connected() || !st.screen) return;
+  try { st.screenCall?.close(); } catch {}
+  const call = st.peer.call(st.conn.peer, st.screen, { metadata: { kind: 'screen' }, sdpTransform: stereo });
+  st.screenCall = call;
+  if (call) tune(call, 'screen');
+}
+function startMicCall(){
+  if (!connected() || !st.mic) return;
+  try { st.micCall?.close(); } catch {}
+  const call = st.peer.call(st.conn.peer, st.mic, { metadata: { kind: 'voice' } });
+  st.micCall = call;
+  if (call) tune(call, 'voice');
+}
+function onCall(call){
+  const kind = call.metadata?.kind === 'voice' ? 'voice' : 'screen';
+  call.answer(undefined, kind === 'screen' ? { sdpTransform: stereo } : {});
+  call.on('stream', s => {
+    lowLatency(call);
+    if (kind === 'screen') {
+      if (st.remoteScreenCall && st.remoteScreenCall !== call) { try { st.remoteScreenCall.close(); } catch {} }
+      st.remoteScreenCall = call; showRemote(s);
+    } else {
+      if (st.remoteVoiceCall && st.remoteVoiceCall !== call) { try { st.remoteVoiceCall.close(); } catch {} }
+      st.remoteVoiceCall = call;
+      const a = $('#voice'); a.srcObject = s; a.volume = +$('#volVoice').value; a.play().catch(needTap);
+    }
+  });
+  call.on('close', () => { if (kind === 'screen' && st.remoteScreenCall === call) hideRemote(); });
+}
+
+// Raise bitrate caps and keep the frame rate steady once the link is up.
+async function tune(call, kind){
+  for (let i = 0; i < 160; i++) {
+    await sleep(250);
+    if (call !== st.screenCall && call !== st.micCall) return;
+    const pc = call.peerConnection;
+    if (!pc || pc.connectionState !== 'connected') continue;
+    await applySenderParams(pc, kind);
+    return;
+  }
+}
+async function applySenderParams(pc, kind){
+  const q = QUALITY[st.q];
+  for (const s of pc.getSenders()) {
+    if (!s.track) continue;
+    const p = s.getParameters();
+    if (!p.encodings || !p.encodings.length) continue;
+    const enc = p.encodings[0];
+    if (s.track.kind === 'video') {
+      enc.maxBitrate = q.br; enc.maxFramerate = q.fps; enc.priority = 'high'; enc.networkPriority = 'high';
+      p.degradationPreference = 'maintain-framerate';
+    } else {
+      enc.maxBitrate = kind === 'screen' ? 128000 : 64000; enc.priority = 'high';
+    }
+    try { await s.setParameters(p); }
+    catch { try { delete p.degradationPreference; await s.setParameters(p); } catch (e) { console.warn('setParameters', e); } }
+  }
+}
+function lowLatency(call){
+  const pc = call.peerConnection; if (!pc) return;
+  for (const r of pc.getReceivers()) {
+    try { if ('jitterBufferTarget' in r) r.jitterBufferTarget = st.buf; } catch {}
+    try { r.playoutDelayHint = st.buf / 1000; } catch {}
+  }
+}
+
+function showRemote(s){
+  const v = $('#remote'); v.srcObject = s; v.hidden = false; v.volume = +$('#volScreen').value; v.muted = false;
+  // Phones (iPhone especially) block sound that starts without a tap: start muted, then ask for one tap.
+  v.play().catch(() => { v.muted = true; v.play().catch(() => {}); needTap(); });
+  $('#empty').hidden = true;
+}
+function needTap(){ $('#tapSound').hidden = false; }
+$('#tapSound').onclick = () => {
+  for (const el of [$('#remote'), $('#voice')]) { el.muted = false; if (el.srcObject) el.play().catch(() => {}); }
+  $('#tapSound').hidden = true;
+};
+function hideRemote(){
+  const v = $('#remote'); v.srcObject = null; v.hidden = true;
+  st.remoteScreenCall = null; $('#empty').hidden = false; refreshEmpty();
+}
+$('#remote').onclick = () => { if (!$('#tapSound').hidden) $('#tapSound').click(); else $('#remote').play().catch(() => {}); };
+function refreshEmpty(){
+  const who = st.partner || 'your partner';
+  if (!connected()) { $('#emptyTitle').textContent = 'Waiting for ' + who + '…'; $('#emptySub').textContent = 'Send them the room name "' + st.room + '".'; }
+  else {
+    $('#emptyTitle').textContent = 'Connected with ' + who;
+    $('#emptySub').textContent = st.partnerPhone
+      ? who + ' is on a phone: they can watch your screen and voice chat, but phones can\'t share theirs.'
+      : IS_MOBILE ? 'When they share their screen, it shows up here. Turn your phone sideways and tap Fullscreen.'
+      : 'When they share their screen, it shows up here.';
+  }
+}
+
+/* ---------- sharing my screen ---------- */
+async function startShare(){
+  if (!CAN_SHARE) { toast('Screen sharing isn\'t available here. Use Chrome or Edge on a computer.', 'bad'); return; }
+  const q = QUALITY[st.q];
+  const audio = { echoCancellation:false, noiseSuppression:false, autoGainControl:false, channelCount:2, sampleRate:48000,
+                  restrictOwnAudio:true, suppressLocalAudioPlayback:false };
+  const video = { width:{ ideal:q.w }, height:{ ideal:q.h }, frameRate:{ ideal:q.fps, max:q.fps } };
+  const extras = { windowAudio:'window', systemAudio:'include', selfBrowserSurface:'exclude', surfaceSwitching:'include', monitorTypeSurfaces:'include' };
+  let s;
+  try { s = await navigator.mediaDevices.getDisplayMedia({ video, audio, ...extras }); }
+  catch (e) {
+    if (e.name === 'TypeError') { try { s = await navigator.mediaDevices.getDisplayMedia({ video, audio:true }); } catch (e2) { if (e2.name !== 'NotAllowedError') toast('Couldn\'t start sharing: ' + e2.message, 'bad'); return; } }
+    else { if (e.name !== 'NotAllowedError') toast('Couldn\'t start sharing: ' + e.message, 'bad'); return; }
+  }
+  const v = s.getVideoTracks()[0];
+  try { v.contentHint = 'motion'; } catch {}
+  v.addEventListener('ended', stopShare);
+  const surface = v.getSettings().displaySurface;
+  const hasAudio = s.getAudioTracks().length > 0;
+  if (!hasAudio) toast('Sharing picture only, no sound. To include the game\'s sound, share the game window with the window-audio switch on (or the entire screen with system audio).', 'warn', 11000);
+  else if (surface === 'monitor') toast('Heads up: entire-screen audio includes Discord, so your partner will hear their own voice. Share just the game window, or use Mado\'s voice chat instead of Discord.', 'warn', 12000);
+  else if (surface === 'browser') toast('You\'re sharing a browser tab. Only that tab\'s sound is sent.', '', 6000);
+  st.screen = s;
+  $('#self').srcObject = s; $('#selfBox').hidden = false;
+  ui(); startScreenCall();
+}
+function stopShare(){
+  if (!st.screen) return;
+  st.screen.getTracks().forEach(t => t.stop()); st.screen = null;
+  try { st.screenCall?.close(); } catch {} st.screenCall = null;
+  send({ t:'screen-off' });
+  $('#self').srcObject = null; $('#selfBox').hidden = true; ui();
+}
+$('#shareBtn').onclick = () => st.screen ? stopShare() : startShare();
+$('#hideSelf').onclick = () => { $('#selfBox').hidden = true; };
+
+$('#quality').onchange = async e => {
+  st.q = e.target.value; store.set('mado-q', st.q);
+  const v = st.screen?.getVideoTracks()[0];
+  if (v) {
+    const q = QUALITY[st.q];
+    try { await v.applyConstraints({ width:{ ideal:q.w }, height:{ ideal:q.h }, frameRate:{ ideal:q.fps, max:q.fps } }); } catch {}
+    const pc = st.screenCall?.peerConnection; if (pc) applySenderParams(pc, 'screen');
+  }
+};
+$('#buffer').onchange = e => {
+  st.buf = +e.target.value; store.set('mado-buf', String(st.buf));
+  if (st.remoteScreenCall) lowLatency(st.remoteScreenCall);
+  if (st.remoteVoiceCall) lowLatency(st.remoteVoiceCall);
+};
+st.q = QUALITY[store.get('mado-q')] ? store.get('mado-q') : 'smooth'; $('#quality').value = st.q;
+st.buf = store.get('mado-buf') === '150' ? 150 : 0; $('#buffer').value = String(st.buf);
+
+/* ---------- voice chat (optional) ---------- */
+$('#micBtn').onclick = async () => {
+  if (!st.mic) {
+    try { st.mic = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:true } }); }
+    catch (e) { toast('Couldn\'t use the microphone: ' + e.message, 'bad'); return; }
+    st.micMuted = false; startMicCall();
+    toast('Voice chat on. Mute yourself on Discord (or leave the call) so you don\'t hear each other twice.', '', 8000);
+  } else {
+    st.micMuted = !st.micMuted;
+    st.mic.getAudioTracks().forEach(t => t.enabled = !st.micMuted);
+  }
+  ui();
+};
+
+/* ---------- controls ---------- */
+$('#volScreen').oninput = e => { $('#remote').volume = +e.target.value; };
+$('#volVoice').oninput = e => { $('#voice').volume = +e.target.value; };
+$('#fsBtn').onclick = async () => {
+  const s = $('#stage'), v = $('#remote');
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    try { await (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch {}
+    return;
+  }
+  if (s.requestFullscreen || s.webkitRequestFullscreen) {
+    try { await (s.requestFullscreen || s.webkitRequestFullscreen).call(s); } catch {}
+    if (IS_MOBILE) { try { await screen.orientation.lock('landscape'); } catch {} }
+  } else if (!v.hidden && v.webkitEnterFullscreen) {
+    v.webkitEnterFullscreen();   // iPhone: only the video element itself can go fullscreen
+  } else toast('Turn your phone sideways for a bigger picture');
+};
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) { try { screen.orientation.unlock(); } catch {} } });
+// Coming back to the tab/app: grab the wake lock again and reconnect to the meeting server if needed.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || st.left || !st.peer) return;
+  keepAwake(true);
+  if (st.peer.disconnected && !st.peer.destroyed) { try { st.peer.reconnect(); } catch {} }
+  if (st.slot === 2 && !connected()) dial();
+});
+$('#remote').ondblclick = () => $('#fsBtn').click();
+$('#statsBtn').onclick = () => { st.showStats = !st.showStats; $('#stats').hidden = !st.showStats; ui(); };
+$('#leaveBtn').onclick = () => { leave(); location.reload(); };
+function leave(){
+  if (st.left) return;
+  send({ t:'bye' });
+  st.left = true;
+  keepAwake(false);
+  st.screen?.getTracks().forEach(t => t.stop());
+  st.mic?.getTracks().forEach(t => t.stop());
+  try { st.peer?.destroy(); } catch {}
+}
+addEventListener('pagehide', leave);
+
+function ui(){
+  const sb = $('#shareBtn');
+  sb.textContent = st.screen ? 'Stop sharing' : 'Share my screen';
+  sb.className = 'btn ' + (st.screen ? 'on' : 'primary');
+  const mb = $('#micBtn');
+  mb.textContent = !st.mic ? 'Voice chat: off' : st.micMuted ? 'Voice chat: muted' : 'Voice chat: on';
+  mb.className = 'btn' + (st.mic && !st.micMuted ? ' on' : '');
+  $('#statsBtn').className = 'btn' + (st.showStats ? ' on' : '');
+}
+
+/* ---------- heartbeat, reconnects, stats ---------- */
+async function tick(){
+  if (st.left) return;
+  if (connected()) {
+    send({ t:'ping' });
+    if (Date.now() - st.lastSeen > 12000) { const c = st.conn; st.conn = null; try { c.close(); } catch {} partnerDown(); }
+  } else if (st.slot === 2 && st.peer?.open && (!st.conn || Date.now() - st.connAt > 8000)) {
+    dial();
+  }
+  if (connected()) await stats();
+}
+
+function pairInfo(report){
+  let pair = null; const byId = new Map();
+  report.forEach(r => byId.set(r.id, r));
+  report.forEach(r => { if (r.type === 'transport' && r.selectedCandidatePairId) pair = byId.get(r.selectedCandidatePairId); });
+  if (!pair) report.forEach(r => { if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') pair = r; });
+  if (!pair) return null;
+  const local = byId.get(pair.localCandidateId), remote = byId.get(pair.remoteCandidateId);
+  return { rtt: pair.currentRoundTripTime, relay: local?.candidateType === 'relay' || remote?.candidateType === 'relay' };
+}
+const fmtMbps = (bytes, ms) => (bytes * 8 / ms / 1000).toFixed(1);
+
+async function stats(){
+  let route = '';
+  try {
+    const pc = st.conn?.peerConnection;
+    if (pc) { const p = pairInfo(await pc.getStats()); if (p) route = (p.relay ? 'relayed' : 'direct') + (p.rtt != null ? ' · ' + Math.round(p.rtt * 1000) + ' ms ping' : ''); }
+  } catch {}
+  setStatus('Connected with ' + (st.partner || 'partner') + (route ? ' · ' + route : ''), route.startsWith('relayed') ? '' : 'ok');
+  if (!st.showStats) return;
+
+  const lines = [];
+  const now = performance.now();
+  try {
+    const pc = st.remoteScreenCall?.peerConnection;
+    if (pc) {
+      (await pc.getStats()).forEach(r => {
+        if (r.type !== 'inbound-rtp' || r.kind !== 'video') return;
+        const prev = st.prev.in; st.prev.in = { b: r.bytesReceived, t: now, lost: r.packetsLost || 0, recv: r.packetsReceived || 0 };
+        const mbps = prev ? fmtMbps(r.bytesReceived - prev.b, now - prev.t) : '…';
+        const lostD = prev ? (r.packetsLost || 0) - prev.lost : 0, recvD = prev ? (r.packetsReceived || 0) - prev.recv : 0;
+        const loss = recvD + lostD > 0 ? (100 * lostD / (recvD + lostD)).toFixed(1) : '0.0';
+        const buf = r.jitterBufferEmittedCount ? Math.round(1000 * r.jitterBufferDelay / r.jitterBufferEmittedCount) : '–';
+        lines.push('<b>Watching</b> ' + (r.frameWidth || '?') + '×' + (r.frameHeight || '?') + ' · ' + Math.round(r.framesPerSecond || 0) + ' fps · ' + mbps + ' Mbps · loss ' + loss + '% · buffer ' + buf + ' ms');
+      });
+    }
+  } catch {}
+  try {
+    const pc = st.screenCall?.peerConnection;
+    if (pc) {
+      (await pc.getStats()).forEach(r => {
+        if (r.type !== 'outbound-rtp' || r.kind !== 'video') return;
+        const prev = st.prev.out; st.prev.out = { b: r.bytesSent, t: now };
+        const mbps = prev ? fmtMbps(r.bytesSent - prev.b, now - prev.t) : '…';
+        const lim = r.qualityLimitationReason && r.qualityLimitationReason !== 'none' ? ' · <span class="lim">limited by ' + r.qualityLimitationReason + '</span>' : '';
+        lines.push('<b>Sending</b> ' + (r.frameWidth || '?') + '×' + (r.frameHeight || '?') + ' · ' + Math.round(r.framesPerSecond || 0) + ' fps · ' + mbps + ' Mbps' + (r.encoderImplementation ? ' · ' + String(r.encoderImplementation).replace(/[<>&]/g, '') : '') + lim);
+      });
+    }
+  } catch {}
+  lines.push('<b>Link</b> ' + (route || 'measuring…'));
+  $('#stats').innerHTML = lines.join('<br>');
+}
+
+ui();
+}
+</script>
+</body>
+</html>
