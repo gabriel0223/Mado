@@ -2,7 +2,7 @@
 
 A little window into each other's screen: peer-to-peer screen sharing for two people, in the browser.
 
-**Open it:** https://gabriel0223.github.io/mado/
+**Open it:** https://gabriel0223.github.io/Mado/
 
 1. Both people open the link (Chrome or Edge on a computer; any modern browser on a phone).
 2. Type the same room name and press **Join room**.
